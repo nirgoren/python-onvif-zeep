@@ -1,10 +1,10 @@
-import asyncio, sys
+import asyncio, sys, os
 from onvif import ONVIFCamera
 
-IP="192.168.0.100"   # Camera IP address
-PORT=10080           # Port
+IP="192.168.1.64"   # Camera IP address
+PORT=80           # Port
 USER="admin"         # Username
-PASS="password"        # Password
+PASS="intflow3121"        # Password
 
 
 XMAX = 1
@@ -94,6 +94,8 @@ def setup_move():
     moverequest.ProfileToken = media_profile.token
     if moverequest.Velocity is None:
         moverequest.Velocity = ptz.GetStatus({'ProfileToken': media_profile.token}).Position
+        moverequest.Velocity.PanTilt.space = ptz_configuration_options.Spaces.ContinuousPanTiltVelocitySpace[0].URI
+        moverequest.Velocity.Zoom.space = ptz_configuration_options.Spaces.ContinuousZoomVelocitySpace[0].URI
 
 
     # Get range of pan and tilt
@@ -143,14 +145,20 @@ def readin():
             
 if __name__ == '__main__':
     setup_move()
-    loop = asyncio.get_event_loop()
-    try:
-        loop.add_reader(sys.stdin,readin)
-        print("Use Ctrl-C to quit")
-        print("Your command: ", end='',flush=True)
-        loop.run_forever()
-    except:
-        pass
-    finally:
-        loop.remove_reader(sys.stdin)
-        loop.close()
+    move_upleft(ptz,moverequest)
+    #if os.name == 'nt':
+    #    loop = asyncio.ProactorEventLoop() # for subprocess' pipes on Windows
+    #    asyncio.set_event_loop(loop)
+    #else:
+    #    loop = asyncio.get_event_loop()
+
+    #try:
+    #    loop.add_reader(sys.stdin,readin)
+    #    print("Use Ctrl-C to quit")
+    #    print("Your command: ", end='',flush=True)
+    #    loop.run_forever()
+    #except:
+    #    pass
+    #finally:
+    #    loop.remove_reader(sys.stdin)
+    #    loop.close()
