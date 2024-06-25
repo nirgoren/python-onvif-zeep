@@ -219,16 +219,16 @@ class ONVIFCamera(object):
     def update_xaddrs(self):
         # Establish devicemgmt service first
         self.dt_diff = None
-        self.devicemgmt = self.create_devicemgmt_service()
-        if self.adjust_time:
+        self.devicemgmt  = self.create_devicemgmt_service()
+        if self.adjust_time :
             cdate = self.devicemgmt.GetSystemDateAndTime().UTCDateTime
-            cam_date = dt.datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day,
-                                   cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
+            cam_date = dt.datetime(cdate.Date.Year, cdate.Date.Month, cdate.Date.Day, cdate.Time.Hour, cdate.Time.Minute, cdate.Time.Second)
             self.dt_diff = cam_date - dt.datetime.utcnow()
             self.devicemgmt.dt_diff = self.dt_diff
-            self.devicemgmt = self.create_devicemgmt_service()
+            #self.devicemgmt.set_wsse()
+            self.devicemgmt  = self.create_devicemgmt_service()
         # Get XAddr of services on the device
-        self.xaddrs = {}
+        self.xaddrs = { }
         capabilities = self.devicemgmt.GetCapabilities({'Category': 'All'})
         for name in capabilities:
             capability = capabilities[name]
@@ -236,15 +236,18 @@ class ONVIFCamera(object):
                 if name.lower() in SERVICES and capability is not None:
                     ns = SERVICES[name.lower()]['ns']
                     self.xaddrs[ns] = capability['XAddr']
+                    received_ip = capability['XAddr'].split("/onvif")[0].split("http://")[1]
+                    if (self.host != received_ip):
+                        new_capability_xaddr = "http://" + str(self.host) + ":" + str(self.port) + "/onvif" + capability['XAddr'].split("/onvif")[1]
+                        self.xaddrs[ns] = new_capability_xaddr
             except Exception:
                 logger.exception('Unexpected service type')
 
         with self.services_lock:
             try:
                 self.event = self.create_events_service()
-                self.xaddrs['http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'] = \
-                    self.event.CreatePullPointSubscription().SubscriptionReference.Address._value_1
-            except Exception:
+                self.xaddrs['http://www.onvif.org/ver10/events/wsdl/PullPointSubscription'] = self.event.CreatePullPointSubscription().SubscriptionReference.Address._value_1
+            except:
                 pass
 
     def update_url(self, host=None, port=None):
